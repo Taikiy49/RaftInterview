@@ -93,6 +93,9 @@ function formatMoney(value) {
 function filterLabel(filters = {}) {
   const parts = [];
   if (filters.state) parts.push(filters.state);
+  if (filters.city) parts.push(filters.city);
+  if (filters.buyer) parts.push(filters.buyer);
+  if (filters.items?.length) parts.push(`${filters.item_match_mode === 'all' ? 'all' : 'any'}: ${filters.items.join(', ')}`);
   if (filters.min_total !== null && filters.min_total !== undefined) parts.push(`> ${formatMoney(filters.min_total)}`);
   if (filters.max_total !== null && filters.max_total !== undefined) parts.push(`< ${formatMoney(filters.max_total)}`);
   if (filters.order_id) parts.push(`#${filters.order_id}`);
@@ -139,8 +142,7 @@ function App() {
       setData(payload);
       setStatus('Live agent response');
     } catch (error) {
-      setData(sampleResponse);
-      setStatus('API offline - run python main.py --web');
+      setStatus(`Agent error - ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -157,8 +159,9 @@ function App() {
           body: JSON.stringify({ request: requestText }),
         });
 
-        if (!response.ok) throw new Error(`API returned ${response.status}`);
-        return await response.json();
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `API returned ${response.status}`);
+        return payload;
       } catch (error) {
         lastError = error;
       }

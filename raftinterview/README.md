@@ -1,70 +1,70 @@
-# Getting Started with Create React App
+# Raft Order Intelligence Agent
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An AI agent for the Raft AI Engineer Coding Challenge. It accepts a natural-language order request, fetches messy customer API text, structures the orders, verifies model output against source evidence, and returns deterministic clean JSON.
 
-## Available Scripts
+## Architecture
 
-In the project directory, you can run:
+```text
+React UI
+  -> Flask agent API (/api/query)
+    -> fetch_orders: call dummy customer API
+    -> parse_orders: chunk raw text, ask OpenRouter, verify against source
+    -> parse_request: convert natural language into filters
+    -> filter_orders: deterministic JSON response
+    -> audit/metrics: evidence, coverage, anomaly and forecast signals
+```
 
-### `npm start`
+The graph is implemented with LangGraph when installed. A sequential fallback is present so local development still works before dependencies are installed.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Setup
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+From the repo root:
 
-### `npm test`
+```bash
+pip install -r requirements.txt
+cd raftinterview
+npm install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Create `.env` in the repo root:
 
-### `npm run build`
+```bash
+OPENROUTER_API_KEY=your_openrouter_key
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The requested model is `openai/gpt-oss-120b:exacto` with temperature `0`.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Run
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+One command from `raftinterview/` starts the dummy API, the agent API, and the React UI:
 
-### `npm run eject`
+```bash
+npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Open http://localhost:3000.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+CLI mode from the repo root:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+python3 main.py "Show me all orders where the buyer was located in Ohio and total value was over 500."
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Expected clean output:
 
-## Learn More
+```json
+{
+  "orders": [
+    { "orderId": "1001", "buyer": "John Davis", "state": "OH", "total": 742.1 },
+    { "orderId": "1003", "buyer": "Mike Turner", "state": "OH", "total": 1299.99 },
+    { "orderId": "1005", "buyer": "Chris Myers", "state": "OH", "total": 512.0 }
+  ]
+}
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Safety
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Context overflow: raw text is chunked before extraction.
+- Hallucination control: every model field must be supported by the original source string.
+- API schema drift: the agent recursively searches response JSON for order-like text instead of assuming `raw_orders`.
+- Determinism: final filtering, sorting, and JSON shaping are local code.

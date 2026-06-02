@@ -5,6 +5,7 @@ const path = require('path');
 const rootDir = path.resolve(__dirname, '..', '..');
 const appDir = path.resolve(__dirname, '..');
 const isWindows = process.platform === 'win32';
+const pythonCommand = isWindows ? 'python' : 'python3';
 const children = [];
 
 function run(name, command, args, cwd, env = {}) {
@@ -53,7 +54,7 @@ process.on('SIGTERM', () => shutdown(0));
   if (await isPortOpen(8000)) {
     console.log('agent-api already listening on http://127.0.0.1:8000');
   } else {
-    run('agent-api', 'python', ['main.py', '--web', '--port', '8000'], rootDir);
+    run('agent-api', pythonCommand, ['main.py', '--web', '--port', '8000'], rootDir);
   }
 
   setTimeout(async () => {
